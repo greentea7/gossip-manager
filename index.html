@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>신변잡기 기록소</title>
+</head>
+<body>
+  <h1>신변잡기 기록</h1>
+  <form id="gossip-form">
+    <input type="text" id="name" placeholder="이름" required>
+    <br>
+    <textarea id="content" placeholder="내용" required></textarea>
+    <br>
+    <button type="submit">기록하기</button>
+  </form>
+
+  <hr>
+
+  <div id="output"></div>
+
+  <script>
+    const endpoint = 'https://script.google.com/macros/s/AKfycbyIxWUkxuic9vGSEC2n4FZmXXRnjxPbBtCtByt--5oNAP4N5zGeB2lmxP0zUPykq1Ev/exec';
+
+    document.getElementById('gossip-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('name').value.trim();
+      const content = document.getElementById('content').value.trim();
+
+      await fetch(endpoint, {
+        method: 'POST',
+        body: JSON.stringify({ name, content }),
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      document.getElementById('content').value = '';
+      fetchAndRender();
+    });
+
+    async function fetchAndRender() {
+      const res = await fetch(endpoint);
+      const data = await res.json();
+
+      const container = document.getElementById('output');
+      container.innerHTML = '';
+
+      Object.keys(data).forEach(name => {
+        const section = document.createElement('div');
+        section.innerHTML = `<h2>${name}</h2>` +
+          data[name].map(item => `<p>${item.time}<br>${item.content}</p>`).join('<hr>');
+        container.appendChild(section);
+      });
+    }
+
+    fetchAndRender();
+  </script>
+</body>
+</html>

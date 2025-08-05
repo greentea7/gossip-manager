@@ -1,59 +1,77 @@
 <!DOCTYPE html>
-<html>
+<html lang="ko">
 <head>
   <meta charset="UTF-8">
-  <title>신변잡기 기록소</title>
+  <title>기록 시스템</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; }
+    input, textarea, button { margin: 5px; }
+    .record { margin: 10px 0; width: 600px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+  </style>
 </head>
 <body>
-  <h1>신변잡기 기록</h1>
-  <form id="gossip-form">
-    <input type="text" id="name" placeholder="이름" required>
-    <br>
-    <textarea id="content" placeholder="내용" required></textarea>
-    <br>
-    <button type="submit">기록하기</button>
-  </form>
+  <h1>사람 정보 기록</h1>
+  
+  <input type="text" id="name" placeholder="이름"><br>
+  <textarea id="content" rows="4" cols="80" placeholder="내용을 입력하세요"></textarea><br>
+  <button onclick="submitData()">기록하기</button>
+  <button onclick="queryData()">조회하기</button>
+  <button onclick="queryAll()">전체조회</button>
 
-  <hr>
-
-  <div id="output"></div>
+  <div id="result"></div>
 
   <script>
-    const endpoint = 'https://script.google.com/macros/s/AKfycbyIxWUkxuic9vGSEC2n4FZmXXRnjxPbBtCtByt--5oNAP4N5zGeB2lmxP0zUPykq1Ev/exec';
+    const ENDPOINT = '여기에_앱스_스크립트_URL_붙여넣기';
 
-    document.getElementById('gossip-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
+    function submitData() {
       const name = document.getElementById('name').value.trim();
       const content = document.getElementById('content').value.trim();
 
-      await fetch(endpoint, {
-        method: 'POST',
+      if (!name || !content) return alert("이름과 내용을 입력하세요.");
+
+      fetch(ENDPOINT, {
+        method: "POST",
         body: JSON.stringify({ name, content }),
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
-
-      document.getElementById('content').value = '';
-      fetchAndRender();
-    });
-
-    async function fetchAndRender() {
-      const res = await fetch(endpoint);
-      const data = await res.json();
-
-      const container = document.getElementById('output');
-      container.innerHTML = '';
-
-      Object.keys(data).forEach(name => {
-        const section = document.createElement('div');
-        section.innerHTML = `<h2>${name}</h2>` +
-          data[name].map(item => `<p>${item.time}<br>${item.content}</p>`).join('<hr>');
-        container.appendChild(section);
+        headers: { "Content-Type": "application/json" }
+      })
+      .then(res => res.json())
+      .then(() => {
+        alert("기록 완료");
+        document.getElementById('content').value = '';
       });
     }
 
-    fetchAndRender();
+    function queryData() {
+      const name = document.getElementById('name').value.trim();
+      if (!name) return alert("이름을 입력하세요.");
+
+      fetch(`${ENDPOINT}?name=${encodeURIComponent(name)}`)
+        .then(res => res.json())
+        .then(showData);
+    }
+
+    function queryAll() {
+      fetch(ENDPOINT)
+        .then(res => res.json())
+        .then(showData);
+    }
+
+    function showData(data) {
+      const result = document.getElementById('result');
+      result.innerHTML = '';
+
+      if (data.length === 0) {
+        result.textContent = "결과가 없습니다.";
+        return;
+      }
+
+      data.forEach(item => {
+        const div = document.createElement('div');
+        div.className = "record";
+        div.innerHTML = `<strong>${item.name}</strong><br>${item.content}<br><small>${item.timestamp}</small>`;
+        result.appendChild(div);
+      });
+    }
   </script>
 </body>
 </html>

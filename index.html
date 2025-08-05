@@ -1,75 +1,151 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
-  <title>기록 시스템</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>신변잡기 기록</title>
   <style>
-    body { font-family: sans-serif; padding: 20px; }
-    input, textarea, button { margin: 5px; }
-    .record { margin: 10px 0; width: 600px; border-bottom: 1px solid #ddd; padding-bottom: 5px; }
+    body {
+      font-family: Arial, sans-serif;
+      padding: 1rem;
+      margin: 0;
+      background: #f8f8f8;
+    }
+    .container {
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+    input, textarea, button {
+      width: 100%;
+      font-size: 1rem;
+      padding: 0.75rem;
+      box-sizing: border-box;
+    }
+    textarea {
+      height: 120px;
+      resize: vertical;
+    }
+    .button-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    #resultArea {
+      background: white;
+      padding: 1rem;
+      border-radius: 8px;
+      margin-top: 1rem;
+      overflow-x: auto;
+    }
+    .record {
+      border-bottom: 1px solid #ddd;
+      padding: 0.5rem 0;
+    }
+    .record:last-child {
+      border-bottom: none;
+    }
+    .record strong {
+      display: block;
+      margin-bottom: 0.25rem;
+    }
+
+    @media (min-width: 600px) {
+      .button-row {
+        flex-direction: row;
+      }
+      .button-row button {
+        width: auto;
+        flex: 1;
+      }
+    }
   </style>
 </head>
 <body>
-  <h1>사람 정보 기록</h1>
-  
-  <input type="text" id="name" placeholder="이름"><br>
-  <textarea id="content" rows="4" cols="80" placeholder="내용을 입력하세요"></textarea><br>
-  <button onclick="submitData()">기록하기</button>
-  <button onclick="queryData()">조회하기</button>
-  <button onclick="queryAll()">전체조회</button>
+  <div class="container">
+    <input type="text" id="nameInput" placeholder="이름을 입력하세요" />
+    <textarea id="contentInput" placeholder="내용을 입력하세요"></textarea>
+    
+    <div class="button-row">
+      <button onclick="submitData()">기록하기</button>
+      <button onclick="getPersonData()">조회하기</button>
+      <button onclick="getAllData()">전체조회</button>
+    </div>
 
-  <div id="result"></div>
+    <div id="resultArea"></div>
+  </div>
 
   <script>
-    const ENDPOINT = 'https://script.google.com/macros/s/AKfycbzhjlm1ttbOap78ATUc1jM1Shc5iUgy4loVOV7UW9QTKrQJ-FKNtiCaoM4CuI2h4AW4/exec';
+    const scriptURL = 'https://script.google.com/macros/library/d/14HI85yHwSJWMsOTm_ly4h-dQ4cItzAdlIYNLWWSpqwe5_WH5WEUUDAvR/4';
 
     function submitData() {
-      const name = document.getElementById('name').value.trim();
-      const content = document.getElementById('content').value.trim();
+      const name = document.getElementById('nameInput').value.trim();
+      const content = document.getElementById('contentInput').value.trim();
 
-      if (!name || !content) return alert("이름과 내용을 입력하세요.");
-
-      fetch(ENDPOINT, {
-        method: "POST",
-        body: JSON.stringify({ name, content }),
-        headers: { "Content-Type": "application/json" }
-      })
-      .then(res => res.json())
-      .then(() => {
-        alert("기록 완료");
-        document.getElementById('content').value = '';
-      });
-    }
-
-    function queryData() {
-      const name = document.getElementById('name').value.trim();
-      if (!name) return alert("이름을 입력하세요.");
-
-      fetch(`${ENDPOINT}?name=${encodeURIComponent(name)}`)
-        .then(res => res.json())
-        .then(showData);
-    }
-
-    function queryAll() {
-      fetch(ENDPOINT)
-        .then(res => res.json())
-        .then(showData);
-    }
-
-    function showData(data) {
-      const result = document.getElementById('result');
-      result.innerHTML = '';
-
-      if (data.length === 0) {
-        result.textContent = "결과가 없습니다.";
+      if (!name || !content) {
+        alert('이름과 내용을 모두 입력하세요.');
         return;
       }
 
-      data.forEach(item => {
+      fetch(scriptURL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'write', name, content }),
+      })
+      .then(response => response.text())
+      .then(result => {
+        alert(result);
+        document.getElementById('contentInput').value = '';
+      })
+      .catch(error => {
+        console.error('에러 발생:', error);
+        alert('기록 중 에러가 발생했습니다.');
+      });
+    }
+
+    function getPersonData() {
+      const name = document.getElementById('nameInput').value.trim();
+      if (!name) {
+        alert('이름을 입력하세요.');
+        return;
+      }
+
+      fetch(`${scriptURL}?action=read&name=${encodeURIComponent(name)}`)
+        .then(response => response.json())
+        .then(data => renderResults(data))
+        .catch(error => {
+          console.error('조회 중 에러:', error);
+          alert('조회 중 에러가 발생했습니다.');
+        });
+    }
+
+    function getAllData() {
+      fetch(`${scriptURL}?action=readall`)
+        .then(response => response.json())
+        .then(data => renderResults(data))
+        .catch(error => {
+          console.error('전체 조회 중 에러:', error);
+          alert('전체 조회 중 에러가 발생했습니다.');
+        });
+    }
+
+    function renderResults(data) {
+      const resultArea = document.getElementById('resultArea');
+      resultArea.innerHTML = '';
+
+      if (!data || data.length === 0) {
+        resultArea.textContent = '기록이 없습니다.';
+        return;
+      }
+
+      // 최신순 정렬
+      data.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      data.forEach(entry => {
         const div = document.createElement('div');
-        div.className = "record";
-        div.innerHTML = `<strong>${item.name}</strong><br>${item.content}<br><small>${item.timestamp}</small>`;
-        result.appendChild(div);
+        div.className = 'record';
+        div.innerHTML = `<strong>${entry.name} (${entry.timestamp})</strong><div style="max-width:600px; word-break:break-word;">${entry.content}</div>`;
+        resultArea.appendChild(div);
       });
     }
   </script>

@@ -132,32 +132,44 @@
     function renderResults(data) {
       const resultArea = document.getElementById('resultArea');
       resultArea.innerHTML = '';
-
+    
       if (!data || data.length === 0) {
         resultArea.textContent = '기록이 없습니다.';
         return;
       }
-
-      // 이름 오름차순 -> 같은 이름이면 최신순 정렬
-      data.sort((a, b) => {
-        if (a.name < b.name) return -1;
-        if (a.name > b.name) return 1;
-        return new Date(b.timestamp) - new Date(a.timestamp);
+    
+      // 이름별로 그룹화
+      const grouped = {};
+      data.forEach(entry => {
+        if (!grouped[entry.name]) grouped[entry.name] = [];
+        grouped[entry.name].push(entry);
       });
     
-      data.forEach(entry => {
-        const date = new Date(entry.timestamp);
-        const formattedDate = date.toISOString().split('T')[0]; // yyyy-MM-dd
+      // 이름 순 정렬 (ㄱㄴㄷ 순)
+      const sortedNames = Object.keys(grouped).sort((a, b) => a.localeCompare(b, 'ko'));
     
-        const div = document.createElement('div');
-        div.className = 'record';
-        div.innerHTML = `
-          <strong>${entry.name} (${formattedDate})</strong>
-          <div style="max-width:600px; word-break:break-word;">${entry.content}</div>
-        `;
-        resultArea.appendChild(div);
+      // 출력
+      sortedNames.forEach(name => {
+        const entries = grouped[name];
+    
+        // 같은 이름 내에서는 최신순 정렬
+        entries.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    
+        const header = document.createElement('div');
+        header.className = 'record';
+        header.innerHTML = `<strong>${name} (총 ${entries.length}건)</strong>`;
+        resultArea.appendChild(header);
+    
+        entries.forEach(entry => {
+          const dateOnly = new Date(entry.timestamp).toISOString().slice(0, 10);
+          const contentDiv = document.createElement('div');
+          contentDiv.innerHTML = `- [${dateOnly}] ${entry.content}`;
+          contentDiv.style = "margin-left: 1rem; max-width: 600px; word-break: break-word;";
+          resultArea.appendChild(contentDiv);
+        });
       });
     }
+
   </script>
 </body>
 </html>

@@ -161,7 +161,10 @@
         resultArea.appendChild(header);
     
         entries.forEach(entry => {
-          const dateOnly = new Date(entry.timestamp).toISOString().slice(0, 10);
+          const date = new Date(entry.timestamp);
+          date.setHours(date.getHours() + 9); // KST 보정
+          const dateOnly = date.toISOString().slice(0, 10);
+          
           const contentDiv = document.createElement('div');
           contentDiv.innerHTML = `- [${dateOnly}] ${entry.content}`;
           contentDiv.style = "margin-left: 1rem; max-width: 600px; word-break: break-word;";
